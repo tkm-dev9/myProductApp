@@ -12,12 +12,10 @@ export default function App() {
     socket.emit("getMessages");
 
     const handleMessage = (msg: string) => {
-      console.warn(msg);
       setMessages((prev) => [...prev, msg]);
     };
 
     const handleInitMessages = (msgs: string[]) => {
-      console.warn(msgs);
       setMessages(msgs);
     };
 
