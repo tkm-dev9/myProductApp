@@ -1,21 +1,27 @@
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
+type Message = {
+  text: string;
+  senderId: string;
+}
+
+
 const socket: Socket = io(import.meta.env.VITE_SOCKET_URL);
 
 export default function App() {
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
 
   useEffect(() => {
     // 初回接続時にサーバーから過去のメッセージを取得
     socket.emit("getMessages");
 
-    const handleMessage = (msg: string) => {
+    const handleMessage = (msg: Message) => {
       setMessages((prev) => [...prev, msg]);
     };
 
-    const handleInitMessages = (msgs: string[]) => {
+    const handleInitMessages = (msgs: Message[]) => {
       setMessages(msgs);
     };
 
@@ -30,17 +36,37 @@ export default function App() {
 
   const sendMessage = async () => {
     if (text.trim() === "") return;
-    socket.emit("message", text);
+    socket.emit("message", {
+      text,
+      senderId: socket.id
+    });
     setText("");
   };
 
   return (
     <div style={{ padding: 20 }}>
       <h2>Socket.IO</h2>
+
       <div>
-        {messages.map((message, index) => (
-          <p key={index}>{message}</p>
-        ))}
+        {messages.map((message, index) => {
+          const isMe = message.senderId === socket.id;
+          return (
+            <p
+              key={index}
+              style={{
+                textAlign: isMe ? "right" : "left",
+                background: isMe ? "#DCF8C6" : "#eee",
+                padding: "6px 10px",
+                borderRadius: 8,
+                maxWidth: "70%",
+                marginLeft: isMe ? "auto" : "0",
+                marginRight: isMe ? "0" : "auto",
+              }}
+            >
+              {message.text}
+            </p>
+          );
+        })}
       </div>
 
       <input

@@ -32,7 +32,7 @@ io.on("connection", (socket) => {
       const snapshot = await db.collection("messages")
         .orderBy("createdAt") // 昇順で取得
         .get();
-      const msgs = snapshot.docs.map(doc => doc.data().text as string);
+      const msgs = snapshot.docs.map(doc => doc.data());
       socket.emit("initMessages", msgs);
     } catch (err) {
       console.error("過去メッセージ取得失敗:", err);
@@ -45,7 +45,8 @@ io.on("connection", (socket) => {
 
     try {
       await db.collection("messages").add({
-        text: msg,
+        text: msg.text,
+        senderId: msg.senderId,
         createdAt: new Date()
       });
     } catch (err) {
