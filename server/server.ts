@@ -32,7 +32,26 @@ io.on("connection", (socket) => {
       const snapshot = await db.collection("messages")
         .orderBy("createdAt") // 昇順で取得
         .get();
-      const msgs = snapshot.docs.map(doc => doc.data());
+      const msgs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        let timestamp: number;
+
+        if (data.createdAt instanceof admin.firestore.Timestamp) {
+          timestamp = data.createdAt.toMillis(); // ← ここでミリ秒に変換
+        } else if (typeof data.createdAt === "number") {
+          timestamp = data.createdAt;
+        } else if (typeof data.createdAt === "string") {
+          const parsed = Date.parse(data.createdAt);
+          timestamp = isNaN(parsed) ? Date.now() : parsed;
+        } else {
+          timestamp = Date.now();
+        }
+        return {
+          text: data.text,
+          senderId: data.senderId,
+          createdAt: timestamp
+        };
+      });
       socket.emit("initMessages", msgs);
     } catch (err) {
       console.error("過去メッセージ取得失敗:", err);
@@ -41,14 +60,12 @@ io.on("connection", (socket) => {
 
   socket.on("message", async (msg) => {
     console.log("受信: ", msg);
+
+
     io.emit("message", msg);
 
     try {
-      await db.collection("messages").add({
-        text: msg.text,
-        senderId: msg.senderId,
-        createdAt: new Date()
-      });
+      await db.collection("messages").add({ msg });
     } catch (err) {
       console.error("保存失敗: ", err);
     }
